@@ -6,7 +6,6 @@ import java.util.List;
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final Environment globals = new Environment();
     private Environment environment = globals;
-    private boolean broken = false;
 
     Interpreter() {
         globals.define("clock", new LoxCallable() {
@@ -210,17 +209,19 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitWhileStmt(Stmt.While stmt) {
-        while (!broken && isTruthy(evaluate(stmt.condition))) {
+        try {
+        while (isTruthy(evaluate(stmt.condition))) {
             execute(stmt.body);
         }
-        broken = false;
+        } catch (Break b) {
+            // nothing to do
+        }
         return null;
     }
 
     @Override
     public Void visitBreakStmt(Stmt.Break stmt) {
-        broken = true;
-        return null;
+        throw new Break(stmt.label == null ? null : stmt.label.lexeme);
     }
 
     @Override
@@ -308,9 +309,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             this.environment = environment;
 
             for (Stmt statement : statements) {
-                if (broken) {
-                    break;
-                }
                 execute(statement);
             }
         } finally {
