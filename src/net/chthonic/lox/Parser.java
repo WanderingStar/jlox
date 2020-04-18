@@ -32,8 +32,30 @@ class Parser {
         if (match(PRINT)) return printStatement();
         if (match(WHILE)) return whileStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
+        if (match(BREAK)) throw error(previous(), "break must be within loop");
 
         return expressionStatement();
+    }
+
+    private Stmt loopStatement() {
+        if (match(FOR)) return forStatement();
+        if (match(IF)) return loopIfStatement();
+        if (match(PRINT)) return printStatement();
+        if (match(WHILE)) return whileStatement();
+        if (match(LEFT_BRACE)) return new Stmt.LoopBody(loopBody());
+        if (match(BREAK)) return breakStatement();
+
+        return expressionStatement();
+    }
+
+    private Stmt breakStatement() {
+        Token label;
+        if (match(SEMICOLON)) {
+            label = null;
+        } else {
+            label = consume(IDENTIFIER, "Expect loop label.");
+        }
+        return new Stmt.Break(label);
     }
 
     private Stmt forStatement() {
@@ -91,6 +113,20 @@ class Parser {
         return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
+    private Stmt loopIfStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after if condition.");
+
+        Stmt thenBranch = loopStatement();
+        Stmt elseBranch = null;
+        if (match(ELSE)) {
+            elseBranch = loopStatement();
+        }
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
+    }
+
     private Stmt printStatement() {
         Expr value = expression();
         consume(SEMICOLON, "Expect ';' after value.");
@@ -101,7 +137,7 @@ class Parser {
         consume(LEFT_PAREN, "Expect '(' after 'while'.");
         Expr condition = expression();
         consume(RIGHT_PAREN, "Expect ')' after condition.");
-        Stmt body = statement();
+        Stmt body = loopStatement();
 
         return new Stmt.While(condition, body);
     }
@@ -111,6 +147,17 @@ class Parser {
 
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
             statements.add(declaration());
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after block.");
+        return statements;
+    }
+
+    private List<Stmt> loopBody() {
+        List<Stmt> statements = new ArrayList<>();
+
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(loopDeclaration());
         }
 
         consume(RIGHT_BRACE, "Expect '}' after block.");
@@ -170,6 +217,17 @@ class Parser {
             if (match(VAR)) return varDeclaration();
 
             return statement();
+        } catch (ParseError error) {
+            synchronize();
+            return null;
+        }
+    }
+
+    private Stmt loopDeclaration() {
+        try {
+            if (match(VAR)) return varDeclaration();
+
+            return loopStatement();
         } catch (ParseError error) {
             synchronize();
             return null;
