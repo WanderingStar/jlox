@@ -19,4 +19,4 @@ for outer (var i=0; i<10; i=i+1) {
     print "outer";
 }
 ```
-- 10.2 anonymous functions
+- 10.2: anonymous functions
