@@ -13,8 +13,6 @@ abstract class Stmt {
     R visitVarStmt(Var stmt);
     R visitWhileStmt(While stmt);
     R visitBreakStmt(Break stmt);
-    R visitLoopBodyStmt(LoopBody stmt);
-    R visitLoopIfStmt(LoopIf stmt);
   }
   static class Block extends Stmt {
     Block(List<Stmt> statements) {
@@ -129,7 +127,8 @@ abstract class Stmt {
     final Stmt body;
   }
   static class Break extends Stmt {
-    Break(Token label) {
+    Break(Token keyword, Token label) {
+      this.keyword = keyword;
       this.label = label;
     }
 
@@ -138,35 +137,8 @@ abstract class Stmt {
       return visitor.visitBreakStmt(this);
     }
 
+    final Token keyword;
     final Token label;
-  }
-  static class LoopBody extends Stmt {
-    LoopBody(List<Stmt> statements) {
-      this.statements = statements;
-    }
-
-    @Override
-    <R> R accept(Visitor<R> visitor) {
-      return visitor.visitLoopBodyStmt(this);
-    }
-
-    final List<Stmt> statements;
-  }
-  static class LoopIf extends Stmt {
-    LoopIf(Expr condition, Stmt thenBranch, Stmt elseBranch) {
-      this.condition = condition;
-      this.thenBranch = thenBranch;
-      this.elseBranch = elseBranch;
-    }
-
-    @Override
-    <R> R accept(Visitor<R> visitor) {
-      return visitor.visitLoopIfStmt(this);
-    }
-
-    final Expr condition;
-    final Stmt thenBranch;
-    final Stmt elseBranch;
   }
 
   abstract <R> R accept(Visitor<R> visitor);

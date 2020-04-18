@@ -35,9 +35,7 @@ public class GenerateAst {
                 "Return     : Token keyword, Expr value",
                 "Var        : Token name, Expr initializer",
                 "While      : Token label, Expr condition, Stmt body",
-                "Break      : Token label",
-                "LoopBody   : List<Stmt> statements",
-                "LoopIf     : Expr condition, Stmt thenBranch, Stmt elseBranch"
+                "Break      : Token keyword, Token label"
         ));
     }
 

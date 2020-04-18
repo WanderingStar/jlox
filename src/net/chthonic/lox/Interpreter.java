@@ -120,8 +120,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                     return (double)left + (double)right;
                 }
 
-                if (left instanceof String && right instanceof String) {
-                    return (String)left + (String)right;
+                if (left instanceof String || right instanceof String) {
+                    return stringify(left) + stringify(right);
                 }
 
                 throw new RuntimeError(expr.operator,
@@ -243,22 +243,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitBreakStmt(Stmt.Break stmt) {
         throw new Break(stmt.label == null ? null : stmt.label.lexeme);
-    }
-
-    @Override
-    public Void visitLoopBodyStmt(Stmt.LoopBody stmt) {
-        executeBlock(stmt.statements, new Environment(environment));
-        return null;
-    }
-
-    @Override
-    public Void visitLoopIfStmt(Stmt.LoopIf stmt) {
-        if (isTruthy(evaluate(stmt.condition))) {
-            execute(stmt.thenBranch);
-        } else if (stmt.elseBranch != null) {
-            execute(stmt.elseBranch);
-        }
-        return null;
     }
 
     @Override

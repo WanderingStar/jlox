@@ -6,6 +6,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private final Interpreter interpreter;
     private final Stack<Map<String, Boolean>> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.NONE;
+    private Stack<String> loops = new Stack<>();
 
     Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -159,7 +160,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitLambdaExpr(Expr.Lambda expr) {
+        // Don't allow break to jump out of a function
+        Stack<String> enclosingLoops = loops;
+        loops = new Stack<>();
         resolveLambda(expr);
+        loops = enclosingLoops;
         return null;
     }
 
@@ -182,7 +187,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         declare(stmt.name);
         define(stmt.name);
 
+        // Don't allow break to jump out of a function
+        Stack<String> enclosingLoops = loops;
+        loops = new Stack<>();
         resolveFunction(stmt, FunctionType.FUNCTION);
+        loops = enclosingLoops;
         return null;
     }
 
@@ -224,29 +233,21 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitWhileStmt(Stmt.While stmt) {
+        loops.push(stmt.label == null ? "" : stmt.label.lexeme);
         resolve(stmt.condition);
         resolve(stmt.body);
+        loops.pop();
         return null;
     }
 
     @Override
     public Void visitBreakStmt(Stmt.Break stmt) {
-        return null;
-    }
-
-    @Override
-    public Void visitLoopBodyStmt(Stmt.LoopBody stmt) {
-        beginScope();
-        resolve(stmt.statements);
-        endScope();
-        return null;
-    }
-
-    @Override
-    public Void visitLoopIfStmt(Stmt.LoopIf stmt) {
-        resolve(stmt.condition);
-        resolve(stmt.thenBranch);
-        if (stmt.elseBranch != null) resolve(stmt.elseBranch);
+        if (loops.isEmpty()) {
+            Lox.error(stmt.keyword, "No enclosing loop");
+        }
+        if (stmt.label != null && !loops.contains(stmt.label.lexeme)) {
+            Lox.error(stmt.label, "No enclosing loop labeled " + stmt.label.lexeme);
+        }
         return null;
     }
 }
