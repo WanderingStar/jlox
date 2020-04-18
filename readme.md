@@ -20,3 +20,5 @@ for outer (var i=0; i<10; i=i+1) {
 }
 ```
 - 10.2: anonymous functions
+- 11.3: unused variable errors. special treatment for variables named `_`
+  (don't complain if they aren't used or if they're redefined, but do complain if they _are_ used)
