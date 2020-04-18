@@ -78,6 +78,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitLambdaExpr(Expr.Lambda expr) {
+        return new LambdaFunction(expr, environment);
+    }
+
+    @Override
     public Object visitBinaryExpr(Expr.Binary expr) {
         Object left = evaluate(expr.left);
         Object right = evaluate(expr.right);

@@ -206,9 +206,20 @@ class Parser {
         }
     }
 
-    private Stmt.Function function(String kind) {
+    private Stmt function(String kind) {
+        if (!check(IDENTIFIER)) {
+            retreat(); // because the lambda statement expects the FUN
+            return statement();
+        }
         Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
         consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+        List<Token> parameters = parameters();
+        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        List<Stmt> body = block();
+        return new Stmt.Function(name, parameters, body);
+    }
+
+    private List<Token> parameters() {
         List<Token> parameters = new ArrayList<>();
         if (!check(RIGHT_PAREN)) {
             do {
@@ -220,10 +231,7 @@ class Parser {
             } while (match(COMMA));
         }
         consume(RIGHT_PAREN, "Expect ')' after parameters.");
-
-        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
-        List<Stmt> body = block();
-        return new Stmt.Function(name, parameters, body);
+        return parameters;
     }
 
 
@@ -254,6 +262,18 @@ class Parser {
         return comma();
     }
 
+    private Expr comma() {
+        Expr expr = assignment();
+
+        while (match(COMMA)) {
+            Token operator = previous();
+            Expr right = ternary();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
     private Expr assignment() {
         Expr expr = ternary();
 
@@ -267,18 +287,6 @@ class Parser {
             }
 
             error(equals, "Invalid assignment target.");
-        }
-
-        return expr;
-    }
-
-    private Expr comma() {
-        Expr expr = assignment();
-
-        while (match(COMMA)) {
-            Token operator = previous();
-            Expr right = ternary();
-            expr = new Expr.Binary(expr, operator, right);
         }
 
         return expr;
@@ -383,7 +391,7 @@ class Parser {
     }
 
     private Expr call() {
-        Expr expr = primary();
+        Expr expr = lambda();
 
         while (true) {
             if (match(LEFT_PAREN)) {
@@ -403,13 +411,28 @@ class Parser {
                 if (arguments.size() >= 255) {
                     error(peek(), "Cannot have more than 255 arguments.");
                 }
-                arguments.add(expression());
+                arguments.add(assignment()); // *NOT* comma
             } while (match(COMMA));
         }
 
         Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
 
         return new Expr.Call(callee, paren, arguments);
+    }
+
+    private Expr lambda() {
+        if (match(FUN)) {
+            String kind = "lambda";
+
+            consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+            List<Token> parameters = parameters();
+
+            consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+            List<Stmt> body = block();
+            return new Expr.Lambda(parameters, body);
+        }
+
+        return primary();
     }
 
     private Expr primary() {
@@ -459,6 +482,15 @@ class Parser {
     private Token advance() {
         if (!isAtEnd()) current++;
         return previous();
+    }
+
+    private Token retreat() {
+        if (current <= 0) {
+            error(peek(), "Tried to retreat from beginning");
+        } else {
+            current--;
+        }
+        return peek();
     }
 
     private boolean isAtEnd() {
