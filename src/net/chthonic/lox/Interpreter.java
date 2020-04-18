@@ -117,6 +117,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 return (double)left * (double)right;
             case BANG_EQUAL: return !isEqual(left, right);
             case EQUAL_EQUAL: return isEqual(left, right);
+            case COMMA: return right;
         }
 
         // Unreachable.

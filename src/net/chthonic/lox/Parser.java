@@ -194,48 +194,6 @@ class Parser {
         return new Stmt.Expression(expr);
     }
 
-    private Expr assignment() {
-        Expr expr = or();
-
-        if (match(EQUAL)) {
-            Token equals = previous();
-            Expr value = assignment();
-
-            if (expr instanceof Expr.Variable) {
-                Token name = ((Expr.Variable)expr).name;
-                return new Expr.Assign(name, value);
-            }
-
-            error(equals, "Invalid assignment target.");
-        }
-
-        return expr;
-    }
-
-    private Expr or() {
-        Expr expr = and();
-
-        while (match(OR)) {
-            Token operator = previous();
-            Expr right = and();
-            expr = new Expr.Logical(expr, operator, right);
-        }
-
-        return expr;
-    }
-
-    private Expr and() {
-        Expr expr = equality();
-
-        while (match(AND)) {
-            Token operator = previous();
-            Expr right = equality();
-            expr = new Expr.Logical(expr, operator, right);
-        }
-
-        return expr;
-    }
-
     private Stmt declaration() {
         try {
             if (match(FUN)) return function("function");
@@ -293,11 +251,29 @@ class Parser {
     }
 
     private Expr expression() {
-        return assignment();
+        return comma();
+    }
+
+    private Expr assignment() {
+        Expr expr = ternary();
+
+        if (match(EQUAL)) {
+            Token equals = previous();
+            Expr value = assignment();
+
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable)expr).name;
+                return new Expr.Assign(name, value);
+            }
+
+            error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
     }
 
     private Expr comma() {
-        Expr expr = ternary();
+        Expr expr = assignment();
 
         while (match(COMMA)) {
             Token operator = previous();
@@ -309,7 +285,7 @@ class Parser {
     }
 
     private Expr ternary() {
-        Expr expr = equality();
+        Expr expr = or();
 
         if (match(QUESTION)) {
             Token operator1 = previous();
@@ -321,6 +297,30 @@ class Parser {
             Expr right = ternary();
             return new Expr.Ternary(expr, operator1, middle, operator2, right);
         }
+        return expr;
+    }
+
+    private Expr or() {
+        Expr expr = and();
+
+        while (match(OR)) {
+            Token operator = previous();
+            Expr right = and();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr and() {
+        Expr expr = equality();
+
+        while (match(AND)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
         return expr;
     }
 
