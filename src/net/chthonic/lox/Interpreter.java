@@ -214,7 +214,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             execute(stmt.body);
         }
         } catch (Break b) {
-            // nothing to do
+            if (b.label != null && !b.label.equals(stmt.label.lexeme)) {
+                // this is a labeled break, and we don't match, so keep breaking
+                throw b;
+            }
         }
         return null;
     }

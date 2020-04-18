@@ -67,11 +67,17 @@ class Parser {
             label = null;
         } else {
             label = consume(IDENTIFIER, "Expect loop label.");
+            consume(SEMICOLON, "Expect ; after label.");
         }
         return new Stmt.Break(label);
     }
 
     private Stmt forStatement() {
+        Token label = null;
+        if (!check(LEFT_PAREN)) {
+            label = consume(IDENTIFIER, "Expect loop label.");
+        }
+
         consume(LEFT_PAREN, "Expect '(' after 'for'.");
 
         Stmt initializer;
@@ -103,7 +109,7 @@ class Parser {
         }
 
         if (condition == null) condition = new Expr.Literal(true);
-        body = new Stmt.While(condition, body);
+        body = new Stmt.While(label, condition, body);
 
         if (initializer != null) {
             body = new Stmt.Block(Arrays.asList(initializer, body));
@@ -147,12 +153,17 @@ class Parser {
     }
 
     private Stmt whileStatement() {
+        Token label = null;
+        if (!check(LEFT_PAREN)) {
+            label = consume(IDENTIFIER, "Expect loop label.");
+        }
+
         consume(LEFT_PAREN, "Expect '(' after 'while'.");
         Expr condition = expression();
         consume(RIGHT_PAREN, "Expect ')' after condition.");
         Stmt body = loopStatement();
 
-        return new Stmt.While(condition, body);
+        return new Stmt.While(label, condition, body);
     }
 
     private List<Stmt> block() {

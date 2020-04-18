@@ -33,7 +33,7 @@ public class GenerateAst {
                 "Print      : Expr expression",
                 "Return     : Token keyword, Expr value",
                 "Var        : Token name, Expr initializer",
-                "While      : Expr condition, Stmt body",
+                "While      : Token label, Expr condition, Stmt body",
                 "Break      : Token label",
                 "LoopBody   : List<Stmt> statements",
                 "LoopIf     : Expr condition, Stmt thenBranch, Stmt elseBranch"
