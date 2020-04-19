@@ -6,7 +6,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private final Interpreter interpreter;
     private final Stack<Map<String, VariableUsage>> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.NONE;
-    private Stack<String> loops = new Stack<>();
+    private Stack<Stmt.While> loops = new Stack<>();
 
     Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -20,15 +20,17 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private enum VariableState {
         DECLARED,
         DEFINED,
+        ASSIGNED,
         USED
     }
 
     private class VariableUsage {
-        public Token declaration;  // for nice error messages
+        public Token token;  // for nice error messages
         public VariableState state;
+        public Set<Stmt.While> usedInLoops = new HashSet<>();
 
-        public VariableUsage(Token declaration, VariableState state) {
-            this.declaration = declaration;
+        public VariableUsage(Token token, VariableState state) {
+            this.token = token;
             this.state = state;
         }
     }
@@ -56,10 +58,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             switch (usage.state){
                 case DECLARED:
                     // should be impossible
-                    Lox.error(usage.declaration, "Variable declared but not defined");
+                    Lox.error(usage.token, "Variable declared but not defined");
                 case DEFINED:
-                    if (!usage.declaration.lexeme.equals("_"))
-                        Lox.error(usage.declaration, "Variable defined but not used");
+                    if (!usage.token.lexeme.equals("_"))
+                        Lox.error(usage.token, "Variable defined but not used");
+                case ASSIGNED:
+                    if (!usage.token.lexeme.equals("_"))
+                        Lox.error(usage.token, "Variable assignment not used");
             }
         }
         scopes.pop();
@@ -83,15 +88,16 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         scopes.peek().get(name.lexeme).state = VariableState.DEFINED;
     }
 
-    private void resolveLocal(Expr expr, Token name) {
+    private VariableUsage resolveLocal(Expr expr, Token name) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
             if (scopes.get(i).containsKey(name.lexeme)) {
                 interpreter.resolve(expr, scopes.size() - 1 - i);
-                return;
+                return scopes.get(i).get(name.lexeme);
             }
         }
 
         // Not found. Assume it is global.
+        return null;
     }
 
     private void resolveFunction(Stmt.Function function, FunctionType type) {
@@ -121,7 +127,22 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     @Override
     public Void visitAssignExpr(Expr.Assign expr) {
         resolve(expr.value);
-        resolveLocal(expr, expr.name);
+
+        VariableUsage usage = resolveLocal(expr, expr.name);
+        if (usage != null) {
+            usage.token = expr.name;
+            if (loops.isEmpty() || usage.state != VariableState.USED) {
+                usage.state = VariableState.ASSIGNED;
+            } else {
+                // if this variable is reassigned in a loop and used in the same loop, it still counts as used
+                Set<Stmt.While> intersection = new HashSet<>(loops);
+                intersection.retainAll(usage.usedInLoops);
+                // it it's NOT used in the same loop, treat it as assigned, but not used
+                if (intersection.isEmpty()) {
+                    usage.state = VariableState.ASSIGNED;
+                }
+            }
+        }
         return null;
     }
 
@@ -175,29 +196,27 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        if (!scopes.isEmpty()) {
-            VariableUsage usage = scopes.peek().get(expr.name.lexeme);
-            if (usage != null) {
-                switch (usage.state) {
-                    case DECLARED:
-                        Lox.error(expr.name,
-                                "Cannot read local variable in its own initializer.");
-                    case DEFINED:
-                        if (usage.declaration.lexeme.equals("_"))
-                            Lox.error(expr.name, "_ variable used");
-                        usage.state = VariableState.USED;
-                }
+        VariableUsage usage = resolveLocal(expr, expr.name);
+        if (usage != null) {
+            switch (usage.state) {
+                case DECLARED:
+                    Lox.error(expr.name,
+                            "Cannot read local variable in its own initializer.");
+                case DEFINED:
+                case ASSIGNED:
+                    if (usage.token.lexeme.equals("_"))
+                        Lox.error(expr.name, "_ variable used");
+                    usage.state = VariableState.USED;
+                    usage.usedInLoops.addAll(loops);
             }
         }
-
-        resolveLocal(expr, expr.name);
         return null;
     }
 
     @Override
     public Void visitLambdaExpr(Expr.Lambda expr) {
         // Don't allow break to jump out of a function
-        Stack<String> enclosingLoops = loops;
+        Stack<Stmt.While> enclosingLoops = loops;
         loops = new Stack<>();
         resolveLambda(expr);
         loops = enclosingLoops;
@@ -224,7 +243,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         define(stmt.name);
 
         // Don't allow break to jump out of a function
-        Stack<String> enclosingLoops = loops;
+        Stack<Stmt.While> enclosingLoops = loops;
         loops = new Stack<>();
         resolveFunction(stmt, FunctionType.FUNCTION);
         loops = enclosingLoops;
@@ -269,7 +288,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitWhileStmt(Stmt.While stmt) {
-        loops.push(stmt.label == null ? "" : stmt.label.lexeme);
+        loops.push(stmt);
         resolve(stmt.condition);
         resolve(stmt.body);
         loops.pop();
@@ -281,9 +300,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         if (loops.isEmpty()) {
             Lox.error(stmt.keyword, "No enclosing loop");
         }
-        if (stmt.label != null && !loops.contains(stmt.label.lexeme)) {
-            Lox.error(stmt.label, "No enclosing loop labeled " + stmt.label.lexeme);
+        if (stmt.label == null) {
+            return null;
         }
+        for (Stmt.While loop : loops) {
+            if (stmt.label.lexeme.equals(loop.label.lexeme)) {
+                return null;
+            }
+        }
+        Lox.error(stmt.label, "No enclosing loop labeled " + stmt.label.lexeme);
         return null;
     }
 }

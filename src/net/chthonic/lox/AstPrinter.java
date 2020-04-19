@@ -3,7 +3,7 @@ package net.chthonic.lox;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-// Creates an unambiguous, if ugly, string representation of AST nodes.
+// Creates an unambiguous, if lispy, string representation of AST nodes.
 class AstPrinter implements Expr.Visitor<String> {
     String print(Expr expr) {
         return expr.accept(this);
@@ -42,7 +42,7 @@ class AstPrinter implements Expr.Visitor<String> {
 
     @Override
     public String visitVariableExpr(Expr.Variable expr) {
-        return parenthesize("var");
+        return expr.name.lexeme;
     }
 
     @Override
@@ -52,7 +52,7 @@ class AstPrinter implements Expr.Visitor<String> {
 
     @Override
     public String visitAssignExpr(Expr.Assign expr) {
-        return parenthesize("ass");
+        return parenthesize("assign " + expr.name.lexeme, expr.value);
     }
 
     @Override
