@@ -7,4 +7,5 @@ var a = "outer";
   foo(); // expect: outer
   var a = "inner";
   foo(); // expect: outer
+  a;
 }

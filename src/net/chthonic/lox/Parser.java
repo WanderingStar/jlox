@@ -172,6 +172,7 @@ class Parser {
 
     private Stmt function(String kind) {
         if (!check(IDENTIFIER)) {
+            // this is a statement that happens to begin with a lambda, eg. fun (a) { return a + 1 }(2)
             retreat(); // because the lambda statement expects the FUN
             return statement();
         }
@@ -374,12 +375,10 @@ class Parser {
 
     private Expr lambda() {
         if (match(FUN)) {
-            String kind = "lambda";
-
-            consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+            consume(LEFT_PAREN, "Expect '(' after fun in lambda.");
             List<Token> parameters = parameters();
 
-            consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+            consume(LEFT_BRACE, "Expect '{' before lambda body.");
             List<Stmt> body = block();
             return new Expr.Lambda(parameters, body);
         }
