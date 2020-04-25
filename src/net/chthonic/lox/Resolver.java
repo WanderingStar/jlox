@@ -14,7 +14,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private enum FunctionType {
         NONE,
-        FUNCTION
+        FUNCTION,
+        LAMBDA
     }
 
     private enum VariableState {
@@ -115,6 +116,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     private void resolveLambda(Expr.Lambda lambda) {
+        FunctionType enclosingFunction = currentFunction;
+        currentFunction = FunctionType.LAMBDA;
+
         beginScope();
         for (Token param : lambda.params) {
             declare(param);

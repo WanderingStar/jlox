@@ -1,0 +1,14 @@
+fun counter() {
+    var n = 0;
+    return fun () {
+        n = n + 1;
+        return n;
+    };
+}
+var c = counter();
+print c();  // expect: 1
+print c();  // expect: 2
+var d = counter();
+print d();  // expect: 1
+print c();  // expect: 3
+print d();  // expect: 2
