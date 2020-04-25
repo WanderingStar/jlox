@@ -7,9 +7,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private final Stack<Map<String, VariableUsage>> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.NONE;
     private Stack<Stmt.While> loops = new Stack<>();
+    private ClassType currentClass = ClassType.NONE;
 
     Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
+    }
+
+    private enum ClassType {
+        NONE,
+        CLASS
     }
 
     private enum FunctionType {
@@ -57,7 +63,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private void endScope() {
         for (VariableUsage usage : scopes.peek().values()) {
-            switch (usage.state){
+            switch (usage.state) {
                 case DECLARED:
                     // should be impossible
                     Lox.error(usage.token, "Variable declared but not defined");
@@ -79,7 +85,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         if (scope.containsKey(name.lexeme)) {
             if (!name.lexeme.equals("_"))
                 Lox.error(name,
-                    "Variable with this name already declared in this scope.");
+                        "Variable with this name already declared in this scope.");
         }
 
         scope.put(name.lexeme, new VariableUsage(name, VariableState.DECLARED));
@@ -207,6 +213,17 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitThisExpr(Expr.This expr) {
+        if (currentClass == ClassType.NONE) {
+            Lox.error(expr.keyword,
+                    "Cannot use 'this' outside of a class.");
+            return null;
+        }
+        resolveLocal(expr, expr.keyword);
+        return null;
+    }
+
+    @Override
     public Void visitUnaryExpr(Expr.Unary expr) {
         resolve(expr.right);
         return null;
@@ -251,13 +268,23 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType.CLASS;
+
         declare(stmt.name);
         define(stmt.name);
+
+        beginScope();
+        scopes.peek().put("this", new VariableUsage(stmt.name, VariableState.USED));
 
         for (Stmt.Function method : stmt.methods) {
             FunctionType declaration = FunctionType.METHOD;
             resolveFunction(method, declaration);
         }
+
+        endScope();
+
+        currentClass = enclosingClass;
         return null;
     }
 
