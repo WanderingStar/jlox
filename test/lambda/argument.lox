@@ -1,0 +1,4 @@
+fun thrice(f, x) {
+  return f(f(f(x)));
+}
+print thrice(fun (a) { return a * 2; }, 1); // expect: 8

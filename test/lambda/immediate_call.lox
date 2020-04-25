@@ -1,0 +1,1 @@
+print fun(a) { return a * 2; }(3); // expect: 6

@@ -1,0 +1,3 @@
+var foo = fun (a) { return a * 2; };
+print foo(1); // expect: 2
+print foo(2); // expect: 4
