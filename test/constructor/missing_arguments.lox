@@ -1,0 +1,5 @@
+class Foo {
+  init(a, b) { a; b; }
+}
+
+var foo = Foo(1); // expect: [line 5] Runtime Error: Expected 2 arguments but got 1.

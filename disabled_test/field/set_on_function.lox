@@ -1,3 +1,0 @@
-fun foo() {}
-
-foo.bar = "value"; // expect: [line 1] Runtime Error: Only instances have fields.
