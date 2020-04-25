@@ -207,6 +207,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitPrintAstStmt(Stmt.PrintAst stmt) {
+        AstPrinter printer = new AstPrinter();
+        System.out.println(printer.print(stmt.expression));
+        return null;
+    }
+
+    @Override
     public Void visitReturnStmt(Stmt.Return stmt) {
         Object value = null;
         if (stmt.value != null) value = evaluate(stmt.value);
