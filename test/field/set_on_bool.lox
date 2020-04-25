@@ -1,1 +1,1 @@
-true.foo = "value"; // expect runtime error: Only instances have fields.
+true.foo = "value"; // expect: [line 1] Runtime Error: Only instances have fields.

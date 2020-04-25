@@ -9,6 +9,7 @@
     var i = -1;
     print i; // expect: -1
   }
+  i;
 }
 
 {

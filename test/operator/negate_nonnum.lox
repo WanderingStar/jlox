@@ -1,1 +1,1 @@
--"s"; // expect runtime error: Operand must be a number.
+-"s"; // expect: [line 1] Runtime Error: Operand must be a number.

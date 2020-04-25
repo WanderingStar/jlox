@@ -1,1 +1,1 @@
-nil(); // expect runtime error: Can only call functions and classes.
+nil(); // expect: [line 1] Runtime Error: Can only call functions and classes.
