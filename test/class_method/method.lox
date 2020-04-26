@@ -1,0 +1,8 @@
+class Math {
+    class abs(x) {
+        return x < 0 ? - x : x;
+    }
+}
+
+print Math.abs(3); // expect: 3
+print Math.abs(-3); // expect: 3

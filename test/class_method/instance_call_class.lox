@@ -1,0 +1,16 @@
+class Car {
+    class init() {
+        cls.wheels = 4;
+    }
+
+    init(wheelSize) {
+        this.wheelSize = wheelSize;
+    }
+
+    describe() {
+        print "A vehicle with " + Car.wheels + " wheels of size " + this.wheelSize;
+    }
+}
+
+var car = Car("22 inch");
+car.describe(); // expect: A vehicle with 4 wheels of size 22 inch

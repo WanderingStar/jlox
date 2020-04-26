@@ -1,0 +1,5 @@
+class Math {
+    class init(x) { // expect: [line 2] Error: Class initializer can't have parameters.
+        cls.pi = 3.14159 + x;
+    }
+}

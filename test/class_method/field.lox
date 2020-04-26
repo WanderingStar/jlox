@@ -1,0 +1,12 @@
+class Math {
+    class setBase(x) {
+        cls.base = x;
+    }
+
+    class getBase() {
+        return cls.base;
+    }
+}
+
+Math.setBase(3);
+print Math.getBase(); // expect: 3

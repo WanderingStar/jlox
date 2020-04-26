@@ -1,9 +1,6 @@
 package net.chthonic.lox;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final Environment globals = new Environment();
@@ -320,6 +317,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
 
         LoxClass klass = new LoxClass(stmt.name.lexeme, instanceMethods, classMethods);
+
+        LoxFunction init = (LoxFunction) klass.get("init");
+        if (init != null) {
+            // already bound
+            init.call(this, Collections.emptyList());
+        }
         environment.assign(stmt.name, klass);
         return null;
     }

@@ -1,0 +1,12 @@
+class Math {
+    class init() {
+        cls.pi = 3.14159;
+    }
+
+    class circleArea(radius) {
+        return cls.pi * radius * radius;
+    }
+}
+
+print Math.pi; // expect: 3.14159
+print Math.circleArea(10); // expect: 314.159

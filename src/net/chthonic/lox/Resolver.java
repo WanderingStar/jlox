@@ -281,6 +281,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         for (Stmt.Function classMethod : stmt.classMethods) {
             FunctionType declaration = FunctionType.METHOD;
             if (classMethod.name.lexeme.equals("init")) {
+                if (!classMethod.params.isEmpty()) {
+                    Lox.error(classMethod.name.line, "Class initializer can't have parameters.");
+                }
                 declaration = FunctionType.INITIALIZER;
             }
             resolveFunction(classMethod, declaration);
