@@ -1,0 +1,11 @@
+class Nonnegative {
+    set_value(x) {
+        this._value = x < 0 ? -x : x;
+    }
+}
+
+var n = Nonnegative();
+n.value = -3;
+print n._value; // expect: 3
+n.value = 3;
+print n._value; // expect: 3

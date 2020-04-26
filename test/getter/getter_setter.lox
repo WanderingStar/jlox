@@ -1,0 +1,18 @@
+class Circle {
+  init(radius) {
+    this.radius = radius;
+  }
+
+  circumference {
+    return 3.141592653 * this.radius * 2;
+  }
+
+  set_circumference(c) {
+    this.radius = c / 3.141592653 / 2;
+  }
+}
+
+var circle = Circle(4);
+var c2 = 2 * circle.circumference;
+circle.circumference = c2;
+print circle.radius; // expect: 8

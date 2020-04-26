@@ -2,6 +2,7 @@ package net.chthonic.lox;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static net.chthonic.lox.TokenType.*;
@@ -184,13 +185,26 @@ class Parser {
 
         List<Stmt.Function> instanceMethods = new ArrayList<>();
         List<Stmt.Function> classMethods = new ArrayList<>();
+        List<Stmt.Function> getters = new ArrayList<>();
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
             try {
+                String kind = "method";
                 if (check(CLASS)) {
                     advance();
-                    classMethods.add((Stmt.Function) function("class method"));
+                    classMethods.add(classMethod());
                 } else {
-                    instanceMethods.add((Stmt.Function) function("method"));
+                    Token methodName = consume(IDENTIFIER, "Expect " + kind + " name.");
+                    if (check(LEFT_PAREN)) {
+                        consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+                        List<Token> parameters = parameters();
+                        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+                        List<Stmt> body = block();
+                        instanceMethods.add(new Stmt.Function(methodName, parameters, body));
+                    } else {
+                        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+                        List<Stmt> body = block();
+                        getters.add(new Stmt.Function(methodName, Collections.emptyList(), body));
+                    }
                 }
             } catch (ClassCastException e) {
                 throw error(peek(), "Methods must not be anonymous");
@@ -199,7 +213,17 @@ class Parser {
 
         consume(RIGHT_BRACE, "Expect '}' after class body.");
 
-        return new Stmt.Class(name, instanceMethods, classMethods);
+        return new Stmt.Class(name, instanceMethods, classMethods, getters);
+    }
+
+    private Stmt.Function classMethod() {
+        String kind = "class method";
+        Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+        consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+        List<Token> parameters = parameters();
+        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        List<Stmt> body = block();
+        return new Stmt.Function(name, parameters, body);
     }
 
     private Stmt function(String kind) {

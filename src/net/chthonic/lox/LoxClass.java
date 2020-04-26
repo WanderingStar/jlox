@@ -10,7 +10,9 @@ class LoxClass extends LoxInstance implements LoxCallable {
 
     public static final LoxClass Class = new LoxClass("Class", Collections.emptyMap(), Collections.emptyMap());
 
-    LoxClass(String name, Map<String, LoxFunction> instanceMethods, Map<String, LoxFunction> classMethods) {
+    LoxClass(String name,
+             Map<String, LoxFunction> instanceMethods,
+             Map<String, LoxFunction> classMethods) {
         super(Class);
         this.name = name;
         this.methods = instanceMethods;

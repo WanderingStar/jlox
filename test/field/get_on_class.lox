@@ -1,2 +1,3 @@
 class Foo {}
-Foo.bar; // expect: [line 2] Runtime Error: Only instances have properties.
+Foo.bar = "baz";
+print Foo.bar; // expect: baz

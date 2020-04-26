@@ -33,8 +33,13 @@ class LoxInstance {
         fields.put(name, value);
     }
 
-    void set(Token name, Object value) {
+    LoxFunction set(Token name, Object value) {
+        LoxFunction method = klass.findMethod("set_" + name.lexeme);
+        if (method != null) {
+            return method.bind(this);
+        }
         fields.put(name.lexeme, value);
+        return null;
     }
 
     @Override

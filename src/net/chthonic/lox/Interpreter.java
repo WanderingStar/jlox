@@ -60,7 +60,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
 
         Object value = evaluate(expr.value);
-        ((LoxInstance)object).set(expr.name, value);
+        LoxFunction setter = ((LoxInstance)object).set(expr.name, value);
+        if (setter != null) {
+            setter.call(this, Collections.singletonList(value));
+        }
         return value;
     }
 
@@ -184,7 +187,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Object visitGetExpr(Expr.Get expr) {
         Object object = evaluate(expr.object);
         if (object instanceof LoxInstance) {
-            return ((LoxInstance) object).get(expr.name);
+            Object field = ((LoxInstance) object).get(expr.name);
+            if (field instanceof LoxFunction && ((LoxFunction) field).type == LoxFunction.FunctionType.GETTER) {
+                return ((LoxFunction) field).call(this, Collections.emptyList());
+            }
+            return field;
         }
 
         throw new RuntimeError(expr.name,
@@ -210,7 +217,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-        LoxFunction function = new LoxFunction(stmt, environment, false);
+        LoxFunction function = new LoxFunction(stmt, environment, LoxFunction.FunctionType.FUNCTION);
         environment.define(stmt.name.lexeme, function);
         return null;
     }
@@ -304,16 +311,25 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         Map<String, LoxFunction> classMethods = new HashMap<>();
         for (Stmt.Function method : stmt.classMethods) {
-            LoxFunction function = new LoxFunction(method, environment,
-                    method.name.lexeme.equals("init"));
+            LoxFunction.FunctionType type = method.name.lexeme.equals("init") ?
+                    LoxFunction.FunctionType.INITIALIZER :
+                    LoxFunction.FunctionType.CLASS_METHOD;
+            LoxFunction function = new LoxFunction(method, environment, type);
             classMethods.put(method.name.lexeme, function);
         }
 
         Map<String, LoxFunction> instanceMethods = new HashMap<>();
         for (Stmt.Function method : stmt.instanceMethods) {
-            LoxFunction function = new LoxFunction(method, environment,
-                    method.name.lexeme.equals("init"));
+            LoxFunction.FunctionType type = method.name.lexeme.equals("init") ?
+                    LoxFunction.FunctionType.INITIALIZER :
+                    LoxFunction.FunctionType.METHOD;
+            LoxFunction function = new LoxFunction(method, environment, type);
             instanceMethods.put(method.name.lexeme, function);
+        }
+
+        for (Stmt.Function getter : stmt.getters) {
+            LoxFunction function = new LoxFunction(getter, environment, LoxFunction.FunctionType.GETTER);
+            instanceMethods.put(getter.name.lexeme, function);
         }
 
         LoxClass klass = new LoxClass(stmt.name.lexeme, instanceMethods, classMethods);
@@ -349,6 +365,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         // nil is only equal to nil.
         if (a == null && b == null) return true;
         if (a == null) return false;
+
+        if (a instanceof Double && ((Double) a).isNaN()) {
+            return false;
+        }
 
         return a.equals(b);
     }

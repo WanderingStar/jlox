@@ -1,4 +1,4 @@
 class Foo {}
 
 var foo = Foo();
-foo(); // expect: [line 1] Runtime Error: Can only call functions and classes.
+foo(); // expect: [line 4] Runtime Error: Can only call functions and classes.

@@ -1,0 +1,6 @@
+class Box {}
+
+var b = Box();
+b.greet = fun () { return "hello"; }; // this does _not_ create a getter
+print b.greet; // expect: <anonymous fn>
+print b.greet(); // expect: hello
