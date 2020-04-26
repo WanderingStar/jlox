@@ -276,14 +276,27 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         define(stmt.name);
 
         beginScope();
-        scopes.peek().put("this", new VariableUsage(stmt.name, VariableState.USED));
+        scopes.peek().put("cls", new VariableUsage(stmt.name, VariableState.USED));
 
-        for (Stmt.Function method : stmt.methods) {
+        for (Stmt.Function classMethod : stmt.classMethods) {
             FunctionType declaration = FunctionType.METHOD;
-            if (method.name.lexeme.equals("init")) {
+            if (classMethod.name.lexeme.equals("init")) {
                 declaration = FunctionType.INITIALIZER;
             }
-            resolveFunction(method, declaration);
+            resolveFunction(classMethod, declaration);
+        }
+
+        endScope();
+
+        beginScope();
+        scopes.peek().put("this", new VariableUsage(stmt.name, VariableState.USED));
+
+        for (Stmt.Function instanceMethod : stmt.instanceMethods) {
+            FunctionType declaration = FunctionType.METHOD;
+            if (instanceMethod.name.lexeme.equals("init")) {
+                declaration = FunctionType.INITIALIZER;
+            }
+            resolveFunction(instanceMethod, declaration);
         }
 
         endScope();

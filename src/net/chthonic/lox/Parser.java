@@ -182,10 +182,16 @@ class Parser {
         Token name = consume(IDENTIFIER, "Expect class name.");
         consume(LEFT_BRACE, "Expect '{' before class body.");
 
-        List<Stmt.Function> methods = new ArrayList<>();
+        List<Stmt.Function> instanceMethods = new ArrayList<>();
+        List<Stmt.Function> classMethods = new ArrayList<>();
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
             try {
-                methods.add((Stmt.Function) function("method"));
+                if (check(CLASS)) {
+                    advance();
+                    classMethods.add((Stmt.Function) function("class method"));
+                } else {
+                    instanceMethods.add((Stmt.Function) function("method"));
+                }
             } catch (ClassCastException e) {
                 throw error(peek(), "Methods must not be anonymous");
             }
@@ -193,7 +199,7 @@ class Parser {
 
         consume(RIGHT_BRACE, "Expect '}' after class body.");
 
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, instanceMethods, classMethods);
     }
 
     private Stmt function(String kind) {

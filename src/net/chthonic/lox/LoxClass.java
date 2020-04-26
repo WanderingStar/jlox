@@ -1,15 +1,23 @@
 package net.chthonic.lox;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-class LoxClass implements LoxCallable {
+class LoxClass extends LoxInstance implements LoxCallable {
     final String name;
     private final Map<String, LoxFunction> methods;
 
-    LoxClass(String name, Map<String, LoxFunction> methods) {
+    public static final LoxClass Class = new LoxClass("Class", Collections.emptyMap(), Collections.emptyMap());
+
+    LoxClass(String name, Map<String, LoxFunction> instanceMethods, Map<String, LoxFunction> classMethods) {
+        super(Class);
         this.name = name;
-        this.methods = methods;
+        this.methods = instanceMethods;
+        for (Map.Entry<String, LoxFunction> entry : classMethods.entrySet()) {
+            LoxFunction boundToClass = entry.getValue().bind(this);
+            set(entry.getKey(), boundToClass);
+        }
     }
 
     LoxFunction findMethod(String name) {

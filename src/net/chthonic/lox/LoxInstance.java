@@ -23,6 +23,10 @@ class LoxInstance {
                 "Undefined property '" + name.lexeme + "'.");
     }
 
+    void set(String name, Object value) {
+        fields.put(name, value);
+    }
+
     void set(Token name, Object value) {
         fields.put(name.lexeme, value);
     }
