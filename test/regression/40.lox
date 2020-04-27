@@ -7,10 +7,12 @@ fun caller(g) {
 fun callCaller() {
   var capturedVar = "before";
   var a = "a";
+  a;
 
   fun f() {
     // Commenting the next line out prevents the bug!
     capturedVar = "after";
+    capturedVar;
 
     // Returning anything also fixes it, even nil:
     //return nil;

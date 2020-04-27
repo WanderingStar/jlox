@@ -1,3 +1,0 @@
-fun foo() {}
-
-class Subclass < foo {} // expect: [line 1] Runtime Error: Superclass must be a class.
