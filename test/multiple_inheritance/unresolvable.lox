@@ -1,0 +1,11 @@
+class O {
+}
+
+class A < O {
+}
+
+class B < A {
+}
+
+class C < A, B { // expect: [line 10] Runtime Error: Unable to resolve multiple inheritance.
+}

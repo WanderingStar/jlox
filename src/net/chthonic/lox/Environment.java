@@ -41,6 +41,11 @@ class Environment {
                 "Undefined variable '" + name.lexeme + "'.");
     }
 
+    // Assign only to this exact environment
+    void superAssign(String name, LoxClass value) {
+        values.put(name, value);
+    }
+
     void define(String name, Object value) {
         values.put(name, value);
     }

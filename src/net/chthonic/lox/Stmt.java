@@ -29,9 +29,9 @@ abstract class Stmt {
     final List<Stmt> statements;
   }
   static class Class extends Stmt {
-    Class(Token name, Expr.Variable superclass, List<Stmt.Function> instanceMethods, List<Stmt.Function> classMethods, List<Stmt.Function> getters) {
+    Class(Token name, List<Expr.Variable> superclasses, List<Stmt.Function> instanceMethods, List<Stmt.Function> classMethods, List<Stmt.Function> getters) {
       this.name = name;
-      this.superclass = superclass;
+      this.superclasses = superclasses;
       this.instanceMethods = instanceMethods;
       this.classMethods = classMethods;
       this.getters = getters;
@@ -43,7 +43,7 @@ abstract class Stmt {
     }
 
     final Token name;
-    final Expr.Variable superclass;
+    final List<Expr.Variable> superclasses;
     final List<Stmt.Function> instanceMethods;
     final List<Stmt.Function> classMethods;
     final List<Stmt.Function> getters;

@@ -1,0 +1,37 @@
+class O {
+  say() {
+    print "O";
+  }
+}
+
+class A < O {
+  say() {
+    print "A";
+  }
+}
+
+class B < O {
+  say() {
+    print "B";
+  }
+}
+
+class C < A, B {
+
+}
+
+class D < B, A {
+
+}
+
+var o = O();
+var a = A();
+var b = B();
+var c = C();
+var d = D();
+
+o.say(); // expect: O
+a.say(); // expect: A
+b.say(); // expect: B
+c.say(); // expect: A
+d.say(); // expect: B

@@ -24,3 +24,4 @@ for outer (var i=0; i<10; i=i+1) {
   (don't complain if they aren't used or if they're redefined, but do complain if they _are_ used)
 - 12.1: class methods, class init()
 - 12.2: getter/setter
+- 13.1: multiple inheritance with C3 linearization

@@ -1,23 +1,36 @@
 package net.chthonic.lox;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 class LoxClass extends LoxInstance implements LoxCallable {
     final String name;
-    final LoxClass superclass;
     private final Map<String, LoxFunction> methods;
+    private final List<LoxClass> mro;
 
-    public static final LoxClass Class = new LoxClass("Class", null, Collections.emptyMap(), Collections.emptyMap());
+    public static final LoxClass Class = new LoxClass("Class");
+
+    private LoxClass(String name) {
+        super(Class);
+        this.name = name;
+        this.methods = Collections.emptyMap();
+        this.mro = Collections.singletonList(this);
+    }
 
     LoxClass(String name,
-             LoxClass superclass,
+             List<LoxClass> superclasses,
              Map<String, LoxFunction> instanceMethods,
-             Map<String, LoxFunction> classMethods) {
+             Map<String, LoxFunction> classMethods) throws InheritanceError {
         super(Class);
-        this.superclass = superclass;
         this.name = name;
+        if (superclasses.isEmpty()) {
+            this.mro = Collections.singletonList(this);
+        } else {
+            this.mro = findMethodResolutionOrder(superclasses);
+        }
+
         this.methods = instanceMethods;
         for (Map.Entry<String, LoxFunction> entry : classMethods.entrySet()) {
             LoxFunction boundToClass = entry.getValue().bind(this);
@@ -25,13 +38,59 @@ class LoxClass extends LoxInstance implements LoxCallable {
         }
     }
 
+    private List<LoxClass> findMethodResolutionOrder(List<LoxClass> superclasses) throws InheritanceError {
+        ArrayList<ArrayList<LoxClass>> toMerge = new ArrayList<>();
+        for (LoxClass superclass : superclasses) {
+
+            toMerge.add(new ArrayList<>(superclass.mro));
+        }
+        toMerge.add(new ArrayList<>(superclasses));
+
+        ArrayList<LoxClass> order = new ArrayList<>();
+        order.add(this);
+        // C3 linearization algorithm
+        while (!toMerge.stream().allMatch(ArrayList::isEmpty)) {
+            LoxClass goodCandidate = null;
+            outer:
+            for (ArrayList<LoxClass> sublist : toMerge) {
+                if (sublist.isEmpty()) continue;
+                LoxClass candidate = sublist.get(0);
+                // is the candidate present in any of the other lists, as any element after 0?
+                for (ArrayList<LoxClass> other : toMerge) {
+                    if (other.indexOf(candidate) > 0) {
+                        continue outer; // reject the candidate
+                    }
+                }
+                goodCandidate = candidate;
+                break;
+            }
+            if (goodCandidate == null) {
+                throw new InheritanceError();
+            }
+            order.add(goodCandidate);
+            for (ArrayList<LoxClass> sublist : toMerge) {
+                sublist.remove(goodCandidate);
+            }
+        }
+        return order;
+    }
+
     LoxFunction findMethod(String name) {
-        if (methods.containsKey(name)) {
-            return methods.get(name);
+        for (LoxClass ancestor : mro) {
+            if (ancestor.methods.containsKey(name)) {
+                return ancestor.methods.get(name);
+            }
         }
 
-        if (superclass != null) {
-            return superclass.findMethod(name);
+        return null;
+    }
+
+    LoxFunction findSuperMethod(String name) {
+        for (int i=1; i<mro.size(); i++) {
+            LoxClass ancestor = mro.get(i);
+            if (ancestor.methods.containsKey(name)) {
+                return ancestor.methods.get(name);
+            }
         }
 
         return null;

@@ -32,7 +32,7 @@ public class GenerateAst {
 
         defineAst(outputDir, "Stmt", Arrays.asList(
                 "Block      : List<Stmt> statements",
-                "Class      : Token name, Expr.Variable superclass," +
+                "Class      : Token name, List<Expr.Variable> superclasses," +
                         " List<Stmt.Function> instanceMethods," +
                         " List<Stmt.Function> classMethods," +
                         " List<Stmt.Function> getters",

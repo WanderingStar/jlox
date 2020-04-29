@@ -290,18 +290,18 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         declare(stmt.name);
         define(stmt.name);
 
-        if (stmt.superclass != null &&
-                stmt.name.lexeme.equals(stmt.superclass.name.lexeme)) {
-            Lox.error(stmt.superclass.name,
+        if (stmt.superclasses.stream().anyMatch(
+                superclass -> stmt.name.lexeme.equals(superclass.name.lexeme))) {
+            Lox.error(stmt.name,
                     "A class cannot inherit from itself.");
         }
 
-        if (stmt.superclass != null) {
+        if (!stmt.superclasses.isEmpty()) {
             currentClass = ClassType.SUBCLASS;
-            resolve(stmt.superclass);
-        }
+            for (Expr.Variable superclass : stmt.superclasses) {
+                resolve(superclass);
+            }
 
-        if (stmt.superclass != null) {
             beginScope();
             scopes.peek().put("super", new VariableUsage(stmt.name, VariableState.USED));
         }
@@ -340,7 +340,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         endScope();
 
-        if (stmt.superclass != null) endScope();
+        if (!stmt.superclasses.isEmpty()) endScope();
 
         currentClass = enclosingClass;
         return null;

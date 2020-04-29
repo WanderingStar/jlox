@@ -70,14 +70,14 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitSuperExpr(Expr.Super expr) {
         int distance = locals.get(expr);
-        LoxClass superclass = (LoxClass)environment.getAt(
+        LoxClass thisClass = (LoxClass)environment.getAt(
                 distance, "super");
 
         // "this" is always one level nearer than "super"'s environment.
         LoxInstance object = (LoxInstance)environment.getAt(
                 distance - 1, "this");
 
-        LoxFunction method = superclass.findMethod(expr.method.lexeme);
+        LoxFunction method = thisClass.findSuperMethod(expr.method.lexeme);
 
         if (method == null) {
             throw new RuntimeError(expr.method,
@@ -327,20 +327,20 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
-        Object superclass = null;
-        if (stmt.superclass != null) {
-            superclass = evaluate(stmt.superclass);
+        ArrayList<LoxClass> superclasses = new ArrayList<>();
+        for (Expr.Variable superklass : stmt.superclasses) {
+            Object superclass = evaluate(superklass);
             if (!(superclass instanceof LoxClass)) {
-                throw new RuntimeError(stmt.superclass.name,
+                throw new RuntimeError(superklass.name,
                         "Superclass must be a class.");
             }
+            superclasses.add((LoxClass) superclass);
         }
 
         environment.define(stmt.name.lexeme, null);
-
-        if (stmt.superclass != null) {
+        if (!superclasses.isEmpty()) {
             environment = new Environment(environment);
-            environment.define("super", superclass);
+            environment.define("super", null);
         }
 
         Map<String, LoxFunction> classMethods = new HashMap<>();
@@ -366,8 +366,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             instanceMethods.put(getter.name.lexeme, function);
         }
 
-        LoxClass klass = new LoxClass(stmt.name.lexeme, (LoxClass) superclass,
-                instanceMethods, classMethods);
+        LoxClass klass;
+        try {
+            klass = new LoxClass(stmt.name.lexeme, superclasses, instanceMethods, classMethods);
+        } catch (InheritanceError e) {
+            throw new RuntimeError(stmt.name, "Unable to resolve multiple inheritance.");
+        }
 
         LoxFunction init = (LoxFunction) klass.get("init");
         if (init != null) {
@@ -375,7 +379,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             init.call(this, Collections.emptyList());
         }
 
-        if (superclass != null) {
+        if (!superclasses.isEmpty()) {
+            environment.superAssign("super", klass);
             environment = environment.enclosing;
         }
 
